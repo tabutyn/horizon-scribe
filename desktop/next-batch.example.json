@@ -1,0 +1,11 @@
+{
+  "schema": "horizon-scribe-next-batch-source/v1",
+  "runId": "manual-001",
+  "images": [
+    {
+      "setId": "example-set",
+      "image": "example.jpg",
+      "rank": 0
+    }
+  ]
+}

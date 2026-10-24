@@ -1,0 +1,19 @@
+{
+  "schema": "horizon-scribe-source/v1",
+  "sets": [
+    {
+      "id": "example-set",
+      "label": "Example set",
+      "sourceProfile": "default/v1",
+      "images": [
+        {
+          "name": "example.jpg",
+          "width": 4032,
+          "height": 3024,
+          "photo": "photos/example.jpg",
+          "baseMask": "masks/example.png"
+        }
+      ]
+    }
+  ]
+}

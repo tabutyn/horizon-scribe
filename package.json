@@ -1,0 +1,42 @@
+{
+  "name": "horizon-scribe",
+  "version": "0.1.0",
+  "description": "Self-hosted iPad raster-label review backed by Cloudflare Workers and R2",
+  "type": "module",
+  "license": "MIT",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tabutyn/horizon-scribe.git"
+  },
+  "homepage": "https://github.com/tabutyn/horizon-scribe#readme",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "check": "node scripts/check.mjs",
+    "test": "node --test cloudflare/test/*.test.mjs desktop/test/*.test.mjs",
+    "configure:cloudflare": "node scripts/configure-cloudflare.mjs",
+    "token": "node scripts/create-api-token.mjs",
+    "prepare:photos": "node desktop/import-photos.mjs",
+    "review:build": "node desktop/build-review.mjs",
+    "review": "node desktop/review-server.mjs",
+    "reviews:export": "node desktop/export-reviews.mjs",
+    "demo": "node scripts/create-demo.mjs",
+    "cloudflare:dev": "wrangler dev --config cloudflare/wrangler.example.jsonc",
+    "cloudflare:deploy": "wrangler deploy --config cloudflare/wrangler.jsonc",
+    "cloudflare:check": "wrangler deploy --dry-run --config cloudflare/wrangler.example.jsonc",
+    "test:browser": "playwright test --config desktop/playwright.config.mjs"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "3.1097.0",
+    "sharp": "0.35.5"
+  },
+  "devDependencies": {
+    "wrangler": "4.152.0",
+    "@playwright/test": "1.64.1"
+  },
+  "overrides": {
+    "undici": "7.30.1"
+  }
+}

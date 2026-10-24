@@ -1,0 +1,132 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10000000000000000000001 /* HorizonScribeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* HorizonScribeApp.swift */; };
+		A10000000000000000000003 /* HorizonScribeSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000003 /* HorizonScribeSession.swift */; };
+		A10000000000000000000004 /* HorizonScribeHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* HorizonScribeHomeView.swift */; };
+		A1000000000000000000000A /* HorizonScribeCore in Frameworks */ = {isa = PBXBuildFile; productRef = A80000000000000000000005 /* HorizonScribeCore */; };
+		A1000000000000000000000B /* HorizonScribeCloudAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000A /* HorizonScribeCloudAPI.swift */; };
+		A1000000000000000000000C /* HorizonScribeCanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000B /* HorizonScribeCanvasView.swift */; };
+                A1000000000000000000000D /* HorizonScribeWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000C /* HorizonScribeWorkspaceView.swift */; };
+                A1000000000000000000000E /* HorizonScribeOfflineCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000D /* HorizonScribeOfflineCache.swift */; };
+		A10000000000000000000011 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A20000000000000000000001 /* HorizonScribeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HorizonScribeApp.swift; sourceTree = "<group>"; };
+		A20000000000000000000003 /* HorizonScribeSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HorizonScribeSession.swift; sourceTree = "<group>"; };
+		A20000000000000000000004 /* HorizonScribeHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HorizonScribeHomeView.swift; sourceTree = "<group>"; };
+		A20000000000000000000005 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A20000000000000000000009 /* HorizonScribe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HorizonScribe.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A2000000000000000000000A /* HorizonScribeCloudAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HorizonScribeCloudAPI.swift; sourceTree = "<group>"; };
+		A2000000000000000000000B /* HorizonScribeCanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HorizonScribeCanvasView.swift; sourceTree = "<group>"; };
+                A2000000000000000000000C /* HorizonScribeWorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HorizonScribeWorkspaceView.swift; sourceTree = "<group>"; };
+                A2000000000000000000000D /* HorizonScribeOfflineCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HorizonScribeOfflineCache.swift; sourceTree = "<group>"; };
+		A20000000000000000000010 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A30000000000000000000001 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (
+			A1000000000000000000000A /* HorizonScribeCore in Frameworks */,
+		); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A40000000000000000000001 = {isa = PBXGroup; children = (A40000000000000000000002 /* HorizonScribe */, A40000000000000000000003 /* Products */); sourceTree = "<group>"; };
+		A40000000000000000000002 /* HorizonScribe */ = {isa = PBXGroup; path = HorizonScribe; sourceTree = "<group>"; children = (
+			A20000000000000000000001 /* HorizonScribeApp.swift */,
+			A20000000000000000000003 /* HorizonScribeSession.swift */,
+			A20000000000000000000004 /* HorizonScribeHomeView.swift */,
+			A20000000000000000000005 /* Info.plist */,
+			A20000000000000000000010 /* Assets.xcassets */,
+			A2000000000000000000000A /* HorizonScribeCloudAPI.swift */,
+			A2000000000000000000000B /* HorizonScribeCanvasView.swift */,
+			A2000000000000000000000C /* HorizonScribeWorkspaceView.swift */,
+			A2000000000000000000000D /* HorizonScribeOfflineCache.swift */,
+		); };
+		A40000000000000000000003 /* Products */ = {isa = PBXGroup; name = Products; sourceTree = "<group>"; children = (A20000000000000000000009 /* HorizonScribe.app */,); };
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A50000000000000000000001 /* HorizonScribe */ = {isa = PBXNativeTarget; buildConfigurationList = A90000000000000000000002 /* Build configuration list for PBXNativeTarget "HorizonScribe" */; buildPhases = (A30000000000000000000002 /* Sources */, A30000000000000000000001 /* Frameworks */, A30000000000000000000003 /* Resources */); buildRules = (); dependencies = (); name = HorizonScribe; packageProductDependencies = (A80000000000000000000005 /* HorizonScribeCore */); productName = HorizonScribe; productReference = A20000000000000000000009 /* HorizonScribe.app */; productType = "com.apple.product-type.application"; };
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A60000000000000000000001 /* Project object */ = {isa = PBXProject; attributes = {BuildIndependentTargetsInParallel = 1; LastUpgradeCheck = 1600; TargetAttributes = {A50000000000000000000001 = {CreatedOnToolsVersion = 16.0; }; }; }; buildConfigurationList = A90000000000000000000001 /* Build configuration list for PBXProject "HorizonScribe" */; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, Base); mainGroup = A40000000000000000000001; packageReferences = (A70000000000000000000003 /* HorizonScribeCore */); productRefGroup = A40000000000000000000003; projectDirPath = ""; projectRoot = ""; targets = (A50000000000000000000001 /* HorizonScribe */,); };
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+                A30000000000000000000003 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000011 /* Assets.xcassets in Resources */,); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A30000000000000000000002 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (
+			A10000000000000000000001 /* HorizonScribeApp.swift in Sources */,
+			A10000000000000000000003 /* HorizonScribeSession.swift in Sources */,
+			A10000000000000000000004 /* HorizonScribeHomeView.swift in Sources */,
+			A1000000000000000000000B /* HorizonScribeCloudAPI.swift in Sources */,
+			A1000000000000000000000C /* HorizonScribeCanvasView.swift in Sources */,
+			A1000000000000000000000D /* HorizonScribeWorkspaceView.swift in Sources */,
+			A1000000000000000000000E /* HorizonScribeOfflineCache.swift in Sources */,
+		); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		A90000000000000000000003 /* Debug project settings */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; IPHONEOS_DEPLOYMENT_TARGET = 16.0; SDKROOT = iphoneos; SWIFT_VERSION = 5.0; }; name = Debug; };
+		A90000000000000000000004 /* Release project settings */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; IPHONEOS_DEPLOYMENT_TARGET = 16.0; SDKROOT = iphoneos; SWIFT_VERSION = 5.0; }; name = Release; };
+		A90000000000000000000005 /* Debug target settings */ = {isa = XCBuildConfiguration; buildSettings = {
+			CODE_SIGN_STYLE = Automatic;
+			ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+			CURRENT_PROJECT_VERSION = 1;
+			GENERATE_INFOPLIST_FILE = NO;
+			INFOPLIST_FILE = HorizonScribe/Info.plist;
+			IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+			HORIZON_SCRIBE_DISPLAY_NAME = "HorizonScribe Dev";
+			MARKETING_VERSION = 1.0.0;
+			PRODUCT_BUNDLE_IDENTIFIER = org.example.horizonscribe.dev;
+			PRODUCT_NAME = "$(TARGET_NAME)";
+			SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+			SWIFT_EMIT_LOC_STRINGS = YES;
+			SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
+			SWIFT_OPTIMIZATION_LEVEL = "-O";
+			SWIFT_VERSION = 5.0;
+			TARGETED_DEVICE_FAMILY = 2;
+		}; name = Debug; };
+		A90000000000000000000006 /* Release target settings */ = {isa = XCBuildConfiguration; buildSettings = {
+			CODE_SIGN_STYLE = Automatic;
+			ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+			CURRENT_PROJECT_VERSION = 1;
+			GENERATE_INFOPLIST_FILE = NO;
+			INFOPLIST_FILE = HorizonScribe/Info.plist;
+			IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+			HORIZON_SCRIBE_DISPLAY_NAME = "HorizonScribe";
+			MARKETING_VERSION = 1.0.0;
+			PRODUCT_BUNDLE_IDENTIFIER = org.example.horizonscribe;
+			PRODUCT_NAME = "$(TARGET_NAME)";
+			SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+			SWIFT_EMIT_LOC_STRINGS = YES;
+			SWIFT_VERSION = 5.0;
+			TARGETED_DEVICE_FAMILY = 2;
+		}; name = Release; };
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A90000000000000000000001 /* Build configuration list for PBXProject "HorizonScribe" */ = {isa = XCConfigurationList; buildConfigurations = (A90000000000000000000003 /* Debug project settings */, A90000000000000000000004 /* Release project settings */,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		A90000000000000000000002 /* Build configuration list for PBXNativeTarget "HorizonScribe" */ = {isa = XCConfigurationList; buildConfigurations = (A90000000000000000000005 /* Debug target settings */, A90000000000000000000006 /* Release target settings */,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		A70000000000000000000003 /* HorizonScribeCore */ = {isa = XCLocalSwiftPackageReference; relativePath = HorizonScribeCore; };
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A80000000000000000000005 /* HorizonScribeCore */ = {isa = XCSwiftPackageProductDependency; package = A70000000000000000000003 /* HorizonScribeCore */; productName = HorizonScribeCore; };
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = A60000000000000000000001 /* Project object */;
+}

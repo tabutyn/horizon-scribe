@@ -1,0 +1,20 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "horizon-scribe",
+  "main": "src/index.mjs",
+  "compatibility_date": "2026-10-21",
+  "workers_dev": true,
+  "r2_buckets": [
+    {
+      "binding": "HORIZON_SCRIBE_BUCKET",
+      "bucket_name": "horizon-scribe",
+    },
+  ],
+  "vars": {
+    "HORIZON_SCRIBE_PREFIX": "production/horizon-scribe/v1",
+    "ALLOWED_ORIGINS": "",
+  },
+  "secrets": {
+    "required": ["HORIZON_SCRIBE_API_TOKEN"],
+  },
+}
