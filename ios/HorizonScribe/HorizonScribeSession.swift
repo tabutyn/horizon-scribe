@@ -9,7 +9,7 @@ import UIKit
 @MainActor
 final class HorizonScribeSession: ObservableObject {
     @Published private(set) var isBusy = false
-    @Published private(set) var status = "Enter your Cloudflare Worker URL and API token."
+    @Published private(set) var status = "Install from your Mac to connect automatically, or enter connection settings below."
     @Published private(set) var catalog: HorizonScribeCatalog?
     @Published private(set) var currentSetID: String?
     @Published private(set) var currentImageName: String?
@@ -58,34 +58,57 @@ final class HorizonScribeSession: ObservableObject {
     }
 
     func restoreSession() async {
+        do {
+            let caches = try FileManager.default.url(for: .cachesDirectory, in: .userDomainMask,
+                                                    appropriateFor: nil, create: true)
+            let setupURL = caches.appendingPathComponent("HorizonScribeSetup.json")
+            if FileManager.default.fileExists(atPath: setupURL.path) {
+                try FileManager.default.setAttributes([.protectionKey: FileProtectionType.complete],
+                                                      ofItemAtPath: setupURL.path)
+            }
+            if let request = try DeviceProvisioningRequest.consume(from: setupURL, save: keychain.save) {
+                await connect(workerURL: request.credentials.workerURL, apiToken: request.credentials.apiToken)
+                // Non-secret receipt lets the installer verify this exact setup attempt.
+                var receipt: [String: String] = [
+                    "schema": "horizon-scribe-device-setup-result/v1",
+                    "requestID": request.requestID,
+                    "status": catalog != nil && !isOffline ? "connected" : "connection-failed"
+                ]
+                if let catalog { receipt["datasetId"] = catalog.datasetId }
+                try JSONSerialization.data(withJSONObject: receipt).write(
+                    to: caches.appendingPathComponent("HorizonScribeSetupResult.json"),
+                    options: [.atomic, .completeFileProtection]
+                )
+                return
+            }
+        } catch {
+            status = "Could not finish Mac setup. Unlock this iPad and rerun the installer."
+            return
+        }
         guard let credentials = keychain.read() else { return }
         await connect(workerURL: credentials.workerURL, apiToken: credentials.apiToken)
     }
 
     func connect(workerURL value: String, apiToken token: String) async {
         guard !isBusy else { return }
-        let trimmedURL = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedToken = token.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let url = URL(string: trimmedURL), url.scheme?.lowercased() == "https", url.host != nil,
-              url.user == nil, url.password == nil, url.query == nil, url.fragment == nil,
-              url.path.isEmpty || url.path == "/" else {
-            status = "Worker URL must be a root HTTPS URL."
+        let credentials: WorkerCredentials
+        do {
+            credentials = try WorkerCredentials(workerURL: value, apiToken: token)
+        } catch {
+            status = error.localizedDescription
             return
         }
-        guard trimmedToken.range(of: "^[A-Za-z0-9_-]{32,256}$", options: .regularExpression) != nil else {
-            status = "API token must contain 32–256 URL-safe characters."
-            return
-        }
+        guard let url = URL(string: credentials.workerURL) else { return }
         isBusy = true
         defer { isBusy = false }
         guard await persistCurrentDraft() else { return }
         clearWorkspace()
         workerURL = url
-        accessToken = trimmedToken
-        cloudAPI = HorizonScribeCloudAPI(baseURL: url, token: trimmedToken)
+        accessToken = credentials.apiToken
+        cloudAPI = HorizonScribeCloudAPI(baseURL: url, token: credentials.apiToken)
         status = "Connecting to HorizonScribe…"
         do {
-            try keychain.save(WorkerCredentials(workerURL: url.absoluteString, apiToken: trimmedToken))
+            try keychain.save(credentials)
             try await loadCatalog()
         } catch {
             if HorizonScribeIdentityError.permitsOfflineFallback(error), await restoreOfflineCatalog() { return }
@@ -177,9 +200,9 @@ final class HorizonScribeSession: ObservableObject {
             try? await offlineCache.saveCatalog(value, ownerUID: ownerUID)
         }
         let nextPass = Self.nextPass(in: value)
-        let requested = value.sets.compactMap { set in
-            set.images.first(where: { set.id == currentSetID && $0.name == currentImageName }).map { (set, $0) }
-        }.first
+        let requested = nextPass.first(where: {
+            $0.0.id == currentSetID && $0.1.name == currentImageName
+        })
         let initial = requested ?? nextPass.first(where: { !$0.1.approved }) ?? nextPass.first
             ?? value.sets.lazy.compactMap { set in set.images.first.map { (set, $0) } }.first
         guard let (initialSet, initialImage) = initial else {
@@ -732,11 +755,6 @@ enum HorizonScribeIdentityError: LocalizedError {
     }
 
     static func isConflict(_ error: Error) -> Bool { statusCode(error) == 409 }
-}
-
-private struct WorkerCredentials: Codable {
-    let workerURL: String
-    let apiToken: String
 }
 
 private struct WorkerCredentialStore {

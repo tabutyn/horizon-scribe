@@ -15,6 +15,8 @@ Your photos + optional masks
 
 Preparing a folder never uploads it. Upload commands are explicit. Keep originals, prepared datasets, and review exports backed up outside Git.
 
+For an existing verified LabelLab R2 object backup, use the [recovery/import workflow](MIGRATION.md#recover-a-verified-labellab-r2-backup). It preserves the backed-up working images and restores newer annotations separately through the normal API; no access to the original workstation is required.
+
 ## Start from an ordinary photo folder
 
 Create the parent `data` folder if it does not exist (`mkdir data`), then:
@@ -110,6 +112,14 @@ After configuring [bucket-scoped credentials](CLOUDFLARE.md#7-optional-use-bucke
 
 Upload plans contain workstation-local absolute paths. Do not commit them or move source media while a plan is in use.
 
+For independent full-body verification after either uploader, set `HORIZON_SCRIBE_API_TOKEN` privately and run:
+
+```shell
+node desktop/verify-dataset.mjs --url https://YOUR_WORKER.workers.dev --snapshot snapshots/DATASET_ID/manifest.json --report data/cloud-verification.json
+```
+
+This read-only check downloads every photo and base mask through the app's authenticated API and compares its size and SHA-256 with the local snapshot. It also checks catalog image identities, dimensions, and snapshot revisions. A success report is written only when all checks pass. `--concurrency` accepts 1–12 (default 6). This does not replace device testing or a backup of review history.
+
 ## Prepare and publish the next round
 
 Use the [desktop reviewer](DESKTOP_REVIEW.md), or write `horizon-scribe-next-batch-source/v1` manually:
@@ -154,4 +164,4 @@ Use the exported `catalog.json` with `review:build --reviews ...` to hide approv
 
 ## Training is a separate integration
 
-The repository exports machine-readable masks and accepts prediction previews, but does not train or run a neural network. Bring a model/training pipeline under its own license. A saved or approved mask is not evidence of model accuracy; validate trained models on independent data before relying on them.
+The repository exports machine-readable masks, accepts prediction previews, and includes an optional pinned [FLAIR-INC sea-only first-pass runner](MODELS_AND_DATA.md#private-flair-inc-first-pass). It does not include model training. Other model pipelines remain external and retain their own licenses. A saved or approved mask is not evidence of model accuracy; validate trained models on independent data before relying on them.

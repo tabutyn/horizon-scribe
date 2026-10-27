@@ -13,7 +13,7 @@ This is a recording plan and runnable walkthrough—not a finished video. Record
 - Use a separate demo Worker/bucket, for example `horizon-scribe-demo` and `horizon-scribe-demo-data`, in an account you control.
 - Use the synthetic demo for the public walkthrough, or a small photo collection you have permission to publish. No private training collection is required.
 - Use a clean browser profile and enlarge terminal/browser text. Close unrelated tabs and hide notifications.
-- Stop recording for Cloudflare authentication, billing screens, secret entry, R2 key creation, password-manager access, and iPad token entry. Resume after success and use placeholders in slides.
+- Stop recording for Cloudflare authentication, billing screens, secret entry, R2 key creation, and password-manager access. The Mac installer provisions iPad credentials automatically. Resume after success and use placeholders in slides.
 - Record desktop and iPad separately; cut between them at the named checkpoints. Keep terminal commands available in the repository so viewers do not need to transcribe the video.
 - Explain the three credentials: Wrangler login deploys/uploads; the app token authorizes the iPad; optional bucket-scoped S3 keys are desktop-only.
 
@@ -29,7 +29,7 @@ Suggested pacing is an editorial guide; adjust to the platform's current upload 
 | 4. Cloudflare resources | Demo bucket and generated config | “One private bucket, one Worker, one app token. No public bucket URL.” |
 | 5. Deploy | Successful deploy and `/health` | “The Worker exposes only the app's authenticated routes. Health alone does not prove photos are uploaded.” |
 | 6. Prepare photos | Source manifest and dataset statistics | “We normalize copies, validate masks, and pin files by hash. The originals stay unchanged.” |
-| 7. Desktop Next Round | Original/overlay toggle, select, reorder | “Pick images that need attention. A prediction is a suggestion, not an approved label.” |
+| 7. Desktop Next Round | Full-width original/overlay sheet, select, optional queue dialog | “Pick images that need attention. A prediction is a suggestion, not an approved label.” |
 | 8. Publish | Dataset upload followed by queue upload | “Selection was local. These explicit commands publish it to my bucket.” |
 | 9. iPad setup | Xcode project, signing, Worker connection | “Use your Apple team and your Worker URL. The iPad never receives an R2 S3 key.” |
 | 10. Label and sync | Pencil/touch, undo, save, approve | “I mark land, sea, and sky, then save a complete raster. Conflicting edits are not silently overwritten.” |
@@ -86,7 +86,7 @@ node desktop/import-photos.mjs --input /path/to/my/photos --output data/my-photo
 node desktop/prepare-dataset.mjs --source data/my-photos/source.json --output snapshots
 ```
 
-The importer creates blank base masks; no AI has labeled the images. If demonstrating an actual external model, provide its prediction sidecar and disclose the model/license separately.
+The importer creates blank base masks; no AI has labeled the images. If demonstrating the optional private FLAIR runner or another model, provide its prediction sidecar and disclose the model/license separately.
 
 Copy the printed `datasetId` into the remaining commands. Explain that `DATASET_ID` is a placeholder, not a filename literally present in the repository.
 
@@ -103,11 +103,11 @@ At **http://127.0.0.1:4317**:
 
 1. Identify the HorizonScribe title and “Local workspace” badge.
 2. Explain the overlay legend. Base-mask orange is binary remove/keep; prediction masks distinguish land/sea/sky.
-3. Show a deliberately incorrect patch. Toggle the overlay off to expose the original.
-4. Select three images. Use the right-hand queue to move one to the top.
-5. Toggle **Selected only** and inspect the final list.
-6. Wait for the saved message. Reload once to prove the queue persists.
-7. Show **Download selection JSON**, but explain that the server has already saved `next-batch.json` locally.
+3. Show the pre-rendered 4×4 inferred-label sheet. Toggle the overlay off to expose the matching source-photo sheet.
+4. Select the worst tile. Select another tile on the same sheet to show that it replaces the first choice.
+5. Move to later sheets and select one image from each. Open **N selected** to adjust iPad order only if needed.
+6. Reload once to prove the automatically saved queue persists.
+7. Show **Download selection JSON** inside the selection dialog, but explain that the server has already saved `next-batch.json` locally.
 8. Point out that no Cloudflare credential is in the browser and no upload has occurred.
 
 Keep desktop preview selection separate from iPad pixel labeling in the narration: selecting a bad prediction does not change or approve its pixels.
@@ -126,9 +126,9 @@ For a longer technical cut, show the S3 uploader's bucket-scoped credentials and
 
 ## iPad demonstration
 
-On the Mac, open `ios/HorizonScribe.xcodeproj`. Select the HorizonScribe scheme, choose your team, and replace example bundle IDs with owned identifiers. Build for a connected iPad. A Debug build appears as **HorizonScribe Dev**.
+On the Mac, follow [automatic iPad installation](../ios/README.md#install-and-connect-from-a-mac). Supply your team, owned bundle identifier prefix, iPad UDID, and Worker URL once. Pipe the demo token into the installer off camera. A Debug build appears as **HorizonScribe Dev**; subsequent updates use `npm run ios:install`.
 
-Pause recording while entering the Worker URL/token. Resume after the catalog loads:
+No Worker URL/token entry is needed on the iPad. Resume after the installer confirms the catalog loaded:
 
 1. Show the **Next Pass** queue containing the exact selected identities/order.
 2. Zoom/pan, paint sea, paint sky, correct land, and adjust brush size/overlay opacity.

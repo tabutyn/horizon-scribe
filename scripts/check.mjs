@@ -7,6 +7,7 @@ const root = fileURLToPath(new URL("../", import.meta.url));
 const ignored = new Set([
   "node_modules",
   ".git",
+  ".local",
   ".wrangler",
   ".build",
   ".swiftpm",

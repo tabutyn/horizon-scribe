@@ -1,8 +1,11 @@
 node_modules/
+.venv*/
 .wrangler/
 dist/
 .DS_Store
 .env
+.local/
+HorizonScribeSetup.json
 .env.*
 .dev.vars
 .dev.vars.*

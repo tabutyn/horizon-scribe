@@ -10,6 +10,7 @@ Use [GitHub private vulnerability reporting](https://github.com/tabutyn/horizon-
 - R2 binding: capability attached by Cloudflare directly to Worker. No credential value exists in source.
 - `HORIZON_SCRIBE_R2_ACCESS_KEY_ID` and `HORIZON_SCRIBE_R2_SECRET_ACCESS_KEY`: optional desktop-only upload credentials. Restrict them to one bucket and never place them in app, source, JSON manifests, or Worker variables.
 - Wrangler login: optional desktop upload/deployment session managed by Wrangler.
+- Mac iPad installer: token is read from Keychain or supplied via stdin/environment, never a CLI argument. Only non-secret settings are saved in ignored `.local/ios-device.json`. A mode-0600 transfer file in a mode-0700 temporary directory is copied through the paired-device connection into the app's private `Library/Caches`. The Mac copy is removed after transfer; the app protects the received file, saves credentials in device-only Keychain, then removes it before connecting. If import fails, unlock the device and retry to consume the pending file. Credentials are never compiled into an app bundle; distributing the build alone does not distribute access to your Worker.
 
 Keep R2 bucket private. Rotate app token after device loss or team-member removal. Use separate deployments for separate trust groups.
 

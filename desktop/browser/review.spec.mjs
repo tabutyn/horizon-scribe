@@ -8,10 +8,10 @@ import { createDemo } from "../../scripts/create-demo.mjs";
 import { buildReview } from "../build-review.mjs";
 import { startReviewServer } from "../review-server.mjs";
 
-let server, base, root;
+let server, base, root, catalog;
 test.beforeAll(async () => {
   root = await mkdtemp(join(tmpdir(), "horizon-scribe-browser-"));
-  const demo = await createDemo(join(root, "demo"));
+  const demo = await createDemo(join(root, "demo"), 17);
   const snapshot = JSON.parse(
     execFileSync(
       process.execPath,
@@ -33,67 +33,81 @@ test.beforeAll(async () => {
   });
   server = await startReviewServer({ bundle: join(root, "review"), port: 0 });
   base = `http://127.0.0.1:${server.address().port}`;
+  catalog = await (await fetch(`${base}/api/catalog`)).json();
 });
 test.afterAll(async () => {
   if (server) await new Promise((resolve) => server.close(resolve));
 });
-test("comparison, exact selection, reorder, persistence, download, and filtering", async ({
+test("full-width sheets, one-per-sheet selection, reorder, persistence, and download", async ({
   page,
 }) => {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(base);
-  await expect(
-    page.getByRole("heading", { name: "Choose the next round." }),
-  ).toBeVisible();
-  await expect(page.locator(".card")).toHaveCount(6);
-  await expect(page.locator(".card img").first()).toHaveJSProperty(
+  await expect(page.locator(".sheet-image")).toHaveCount(1);
+  await expect(page.locator(".tile-button")).toHaveCount(16);
+  await expect(page.locator("#page")).toHaveText("Sheet 1 / 2");
+  await expect(page.locator("aside")).toHaveCount(0);
+  const sheetBox = await page.locator(".sheet-frame").boundingBox();
+  expect(sheetBox.width).toBeGreaterThan(1000);
+  await expect(page.locator(".sheet-image")).toHaveJSProperty(
     "naturalWidth",
-    480,
+    1920,
   );
-  await page.getByLabel("Show overlay").uncheck();
-  await expect(page.locator(".card img").first()).toHaveAttribute(
+  await page.getByTitle("Toggle inferred-label overlay").click();
+  await expect(page.locator(".sheet-image")).toHaveAttribute(
     "src",
     /photo\.jpg$/,
   );
-  await page.getByLabel("Show overlay").check();
-  await page.locator(".card").nth(0).click();
-  await page.locator(".card").nth(1).click();
-  await expect(page.locator("#count")).toHaveText("2");
-  await expect(page.locator("#status")).toHaveText(
-    "Saved locally as next-batch.json",
+  await page.getByTitle("Toggle inferred-label overlay").click();
+  const first = catalog.images[catalog.sheets[0].imageIndexes[0]].image;
+  const second = catalog.images[catalog.sheets[0].imageIndexes[1]].image;
+  const third = catalog.images[catalog.sheets[1].imageIndexes[0]].image;
+  await page.locator(".tile-button").nth(0).click();
+  await page.locator(".tile-button").nth(1).click();
+  await expect(page.locator("#count")).toHaveText("1");
+  await expect(page.locator(".tile-button").nth(0)).toHaveAttribute(
+    "aria-pressed",
+    "false",
   );
+  await expect(page.locator(".tile-button").nth(1)).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await page.getByRole("button", { name: "Next" }).click();
+  await expect(page.locator(".tile-button")).toHaveCount(1);
+  await page.locator(".tile-button").click();
+  await expect(page.locator("#count")).toHaveText("2");
+  await page.getByRole("button", { name: "2 selected" }).click();
+  await expect(page.locator("#selection-dialog")).toBeVisible();
   await page
     .locator("#queue li")
     .nth(1)
     .getByRole("button", { name: /Move up/ })
     .click();
-  await expect(page.locator("#status")).toHaveText(
-    "Saved locally as next-batch.json",
-  );
-  const saved = JSON.parse(
-    await readFile(join(root, "review", "next-batch.json"), "utf8"),
-  );
-  expect(saved.images.map((row) => row.image)).toEqual([
-    "synthetic-4.png",
-    "synthetic-2.png",
-  ]);
+  let saved;
+  await expect.poll(async () => {
+    saved = JSON.parse(
+      await readFile(join(root, "review", "next-batch.json"), "utf8"),
+    );
+    return saved.images.map((row) => row.image);
+  }).toEqual([third, second]);
+  expect(saved.images.map((row) => row.image)).toEqual([third, second]);
   await page.reload();
   await expect(page.locator("#count")).toHaveText("2");
-  await page.getByLabel("Selected only").check();
-  await expect(page.locator(".card")).toHaveCount(2);
+  await page.getByRole("button", { name: "2 selected" }).click();
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download selection JSON" }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toBe("next-batch.json");
   const exported = JSON.parse(await readFile(await download.path(), "utf8"));
   expect(exported.images).toEqual(saved.images);
-  await page.getByLabel("Selected only").uncheck();
+  await page.getByRole("button", { name: "Close selection" }).click();
+  await expect(page.locator("#selection-dialog")).toBeHidden();
   await page.screenshot({
     path: "test-results/horizon-scribe-desktop.png",
     fullPage: true,
   });
-  await page.getByLabel("Find image").fill("synthetic-6");
-  await expect(page.locator(".card")).toHaveCount(1);
+  expect(first).not.toBe(second);
   expect(errors).toEqual([]);
 });

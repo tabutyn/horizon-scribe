@@ -16,7 +16,8 @@ There is no hosted HorizonScribe account, subscription server, bundled photo col
 | Cloud API | [`cloudflare/`](docs/CLOUDFLARE.md) | Token-authenticated Worker, private R2 assets, conditional review writes and retained revisions |
 | Photo importer | `desktop/import-photos.mjs` | Normalize orientation, remove metadata from upload copies, create blank base masks |
 | Dataset builder | `desktop/prepare-dataset.mjs` | Validate images/masks, hash blobs, prepare an immutable dataset and upload plan |
-| Desktop Next Round reviewer | [`desktop/review/`](docs/DESKTOP_REVIEW.md) | Compare original/overlay previews, filter and select candidates, reorder and save a batch |
+| Desktop Next Round reviewer | [`desktop/review/`](docs/DESKTOP_REVIEW.md) | Compare full-width original/overlay sheets, select candidates, reorder and save a batch |
+| Optional FLAIR-INC first pass | [`model/`](docs/MODELS_AND_DATA.md#private-flair-inc-first-pass) | Privately download a pinned IGN checkpoint and infer sea proposals over a prepared snapshot |
 | Cloud review exporter | `desktop/export-reviews.mjs` | Download saved full label rasters and current approval status |
 | Upload tools | `desktop/wrangler-upload.mjs`, `desktop/upload-r2.mjs` | Publish datasets and next-round queues to your bucket |
 | Synthetic demo | `scripts/create-demo.mjs` | Generate six simple scenes and deliberately imperfect masks; no real photos or trained model |
@@ -27,7 +28,7 @@ There is no hosted HorizonScribe account, subscription server, bundled photo col
 1. [Cloudflare setup](docs/CLOUDFLARE.md): create your bucket and Worker, configure the app token, verify the API.
 2. [Datasets](docs/DATASETS.md): use your own photos or the synthetic demo, then upload a validated snapshot.
 3. [Desktop review](docs/DESKTOP_REVIEW.md): inspect previews and publish the next labeling round.
-4. [iPad build and use](ios/README.md): choose your Apple team, build HorizonScribe, and connect it to your Worker.
+4. [iPad install and use](ios/README.md#install-and-connect-from-a-mac): configure your Apple team and Worker on the Mac; the installer builds, installs, and connects the app without typing credentials on iPad.
 5. [Migration and release gate](docs/MIGRATION.md): preserve existing work before replacing an older app.
 6. [Architecture and identifiers](docs/ARCHITECTURE.md): names, schemas, routes, storage, and trust boundaries.
 
@@ -64,7 +65,7 @@ npm run review:build -- --snapshot snapshots/DATASET_ID/manifest.json --plan sna
 npm run review -- --bundle data/review-round-01
 ```
 
-Open **http://127.0.0.1:4317**. Select images, compare overlays, and reorder the queue. Selection changes save in `data/review-round-01/next-batch.json`. This server listens on loopback only and performs **no cloud writes**. Press Ctrl+C to stop it.
+Open **http://127.0.0.1:4317**. Review each full-width pre-rendered 4×4 sheet and select one worst result; choosing another tile on the same sheet replaces it. Compare the overlay sheet with its matching source-photo sheet. Open **N selected** only when you need to inspect or reorder the queue. Selection changes save in `data/review-round-01/next-batch.json`. This server listens on loopback only and performs **no cloud writes**. Press Ctrl+C to stop it.
 
 Prepare the selected batch:
 
@@ -90,7 +91,7 @@ node desktop/prepare-dataset.mjs --source data/my-photos/source.json --output sn
 
 In PowerShell, use a quoted path such as `"D:\My Photos\Coast"`. The input directory is read-only; normalized upload copies go to the output directory. Blank base masks mean “keep everything until reviewed,” not “the model already labeled this photo.”
 
-If you already have base masks or predicted class masks, use the documented [source manifest contracts](docs/DATASETS.md) and [prediction-preview input](docs/DESKTOP_REVIEW.md#optional-model-predictions). No model is needed to start manual labeling.
+If you already have base masks or predicted class masks, use the documented [source manifest contracts](docs/DATASETS.md) and [prediction-preview input](docs/DESKTOP_REVIEW.md#optional-model-predictions). No model is needed to start manual labeling. For a private zero-shot sea proposal, use the optional [pinned FLAIR-INC runner](docs/MODELS_AND_DATA.md#private-flair-inc-first-pass).
 
 ## Cloud and iPad summary
 

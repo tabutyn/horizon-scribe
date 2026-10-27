@@ -30,15 +30,29 @@ export function validateSelection(value, manifest) {
     throw errorWithStatus(
       "Selection must match this dataset and contain at most 500 images",
     );
-  const available = new Set(
-      manifest.images.map((row) => identity(row.setId, row.image)),
+  const sheetByImage = new Map(
+      manifest.sheets.flatMap((sheet) =>
+        sheet.imageIndexes.map((imageIndex) => [
+          identity(
+            manifest.images[imageIndex].setId,
+            manifest.images[imageIndex].image,
+          ),
+          sheet.index,
+        ]),
+      ),
     ),
+    available = new Set(sheetByImage.keys()),
+    selectedSheets = new Set(),
     seen = new Set();
   const images = value.images.map((row, rank) => {
     const key = identity(row?.setId, row?.image);
     if (!available.has(key) || seen.has(key))
       throw errorWithStatus("Unknown or duplicate selection");
+    const sheet = sheetByImage.get(key);
+    if (selectedSheets.has(sheet))
+      throw errorWithStatus("Select at most one image from each review sheet");
     seen.add(key);
+    selectedSheets.add(sheet);
     return { setId: row.setId, image: row.image, rank };
   });
   return {
@@ -58,7 +72,27 @@ export async function startReviewServer({ bundle, port = 4317 }) {
     manifest.schema !== "horizon-scribe-review-bundle/v1" ||
     !/^[a-f0-9]{64}$/.test(manifest.datasetId) ||
     !Array.isArray(manifest.images) ||
-    manifest.images.some((row, index) => row.index !== index)
+    manifest.images.some((row, index) => row.index !== index) ||
+    manifest.sheetPolicy !== "one-selection-per-sheet" ||
+    !Array.isArray(manifest.sheets) ||
+    manifest.sheets.some(
+      (sheet, index) =>
+        sheet.index !== index ||
+        sheet.columns !== 4 ||
+        sheet.rows !== 4 ||
+        !Array.isArray(sheet.imageIndexes) ||
+        sheet.imageIndexes.length < 1 ||
+        sheet.imageIndexes.length > 16 ||
+        sheet.imageIndexes.some(
+          (imageIndex) =>
+            !Number.isInteger(imageIndex) || !manifest.images[imageIndex],
+        ),
+    ) ||
+    new Set(manifest.sheets.flatMap((sheet) => sheet.imageIndexes)).size !==
+      manifest.sheets.reduce(
+        (count, sheet) => count + sheet.imageIndexes.length,
+        0,
+      )
   )
     throw new Error("Invalid review bundle");
   const selectionPath = join(root, "next-batch.json");
@@ -115,18 +149,19 @@ export async function startReviewServer({ bundle, port = 4317 }) {
         });
       if (request.method === "GET" && url.pathname === "/api/selection")
         return send(200, selected);
-      const media = /^\/media\/(\d+)\.(photo|overlay)\.jpg$/.exec(url.pathname);
+      const media =
+        /^\/media\/sheet-(\d+)\.(photo|overlay)\.jpg$/.exec(url.pathname);
       if (
         request.method === "GET" &&
         media &&
-        manifest.images[Number(media[1])]
+        manifest.sheets[Number(media[1])]
       )
         return send(
           200,
           await readFile(
             await containedFile(
               root,
-              `media/${Number(media[1])}.${media[2]}.jpg`,
+              `media/sheet-${Number(media[1])}.${media[2]}.jpg`,
             ),
           ),
           "image/jpeg",

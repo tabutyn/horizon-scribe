@@ -33,6 +33,9 @@ The desktop reviewer does not proxy your cloud account. Cloudflare does not run 
 | Xcode display-name setting | `HORIZON_SCRIBE_DISPLAY_NAME` |
 | Keychain service | `org.horizon-scribe.worker` |
 | Application Support folders | `HorizonScribe/Drafts`, `HorizonScribe/Cache` |
+| Mac installation command | `npm run ios:install` |
+| Mac installer settings / default Keychain service | Ignored `.local/ios-device.json` / `org.horizon-scribe.installer` |
+| One-time device provisioning / receipt | Private `Library/Caches/HorizonScribeSetup.json` / `HorizonScribeSetupResult.json` |
 | Default Worker and bucket names | `horizon-scribe` |
 | Worker R2 binding | `HORIZON_SCRIBE_BUCKET` |
 | Worker secret | `HORIZON_SCRIBE_API_TOKEN` |

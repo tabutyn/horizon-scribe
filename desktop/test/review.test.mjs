@@ -11,6 +11,7 @@ import { buildReview } from "../build-review.mjs";
 import { startReviewServer, validateSelection } from "../review-server.mjs";
 import { readJSON, maskPixels } from "../lib.mjs";
 import { importPhotos } from "../import-photos.mjs";
+import { stageSelectedPredictions } from "../stage-selected-predictions.mjs";
 
 const prepare = fileURLToPath(
   new URL("../prepare-dataset.mjs", import.meta.url),
@@ -45,12 +46,14 @@ test("synthetic photos → snapshot → comparison previews → selection → iP
   let response = await fetch(`${base}/api/catalog`),
     catalog = await response.json();
   assert.equal(catalog.images.length, 6);
+  assert.equal(catalog.sheets.length, 1);
+  assert.equal(catalog.sheets[0].imageIndexes.length, 6);
   assert.equal(catalog.images[1].mode, "prediction");
   const body = {
     schema: "horizon-scribe-next-batch-source/v1",
     datasetId: catalog.datasetId,
     selectionRevision: 0,
-    images: [catalog.images[1], catalog.images[0]],
+    images: [catalog.images[1]],
   };
   response = await fetch(`${base}/api/selection`, {
     method: "PUT",
@@ -68,7 +71,7 @@ test("synthetic photos → snapshot → comparison previews → selection → iP
   const saved = await readJSON(join(bundle, "next-batch.json"));
   assert.deepEqual(
     saved.images.map((row) => row.rank),
-    [0, 1],
+    [0],
   );
   const result = JSON.parse(
     execFileSync(
@@ -85,12 +88,12 @@ test("synthetic photos → snapshot → comparison previews → selection → iP
       { encoding: "utf8" },
     ),
   );
-  assert.equal(result.imageCount, 2);
+  assert.equal(result.imageCount, 1);
   assert.equal(
     (await readJSON(result.batch)).selectedImages[0].image,
     catalog.images[1].image,
   );
-  response = await fetch(`${base}/media/1.overlay.jpg`);
+  response = await fetch(`${base}/media/sheet-0.overlay.jpg`);
   assert.equal(response.headers.get("content-type"), "image/jpeg");
   assert.ok((await response.arrayBuffer()).byteLength > 100);
   response = await fetch(`${base}/`, {
@@ -114,23 +117,30 @@ test("synthetic photos → snapshot → comparison previews → selection → iP
   const restored = await (
     await fetch(`http://127.0.0.1:${reopened.address().port}/api/catalog`)
   ).json();
-  assert.equal(restored.selection.images.length, 2);
+  assert.equal(restored.selection.images.length, 1);
 });
-test("rejects unknown, duplicate, oversized, or wrong-dataset selections", () => {
+test("rejects unknown, duplicate, same-sheet, oversized, or wrong-dataset selections", () => {
   const manifest = {
     datasetId: "a".repeat(64),
-    images: [{ setId: "s", image: "i" }],
+    images: [
+      { setId: "s", image: "i" },
+      { setId: "s", image: "j" },
+    ],
+    sheets: [
+      { index: 0, columns: 4, rows: 4, imageIndexes: [0, 1] },
+    ],
   };
   const good = {
     schema: "horizon-scribe-next-batch-source/v1",
     datasetId: manifest.datasetId,
-    images: manifest.images,
+    images: [manifest.images[0]],
   };
   assert.equal(validateSelection(good, manifest).images.length, 1);
   for (const value of [
     { ...good, datasetId: "b".repeat(64) },
     { ...good, images: [{ setId: "s", image: "unknown" }] },
     { ...good, images: [...good.images, ...good.images] },
+    { ...good, images: manifest.images },
     { ...good, images: Array(501).fill(good.images[0]) },
   ])
     assert.throws(() => validateSelection(value, manifest));
@@ -165,6 +175,106 @@ test("rejects mismatched prediction masks and changed source photos", async () =
     }),
     /changed/,
   );
+});
+test("prediction-only review excludes images without a prediction", async () => {
+  const { root, demo, snapshot } = await fixture();
+  const predictions = await readJSON(demo.predictions);
+  predictions.images.pop();
+  await writeFile(demo.predictions, JSON.stringify(predictions));
+  const output = join(root, "prediction-only");
+  const result = await buildReview({ snapshot: snapshot.manifest, plan: snapshot.uploadPlan,
+    output, predictions: demo.predictions, candidates: "predictions" });
+  assert.equal(result.images, 5);
+  const manifest = await readJSON(join(output, "manifest.json"));
+  assert.equal(manifest.candidateMode, "predictions");
+  assert.deepEqual(manifest.predictionCoverage, { predicted: 5, total: 6 });
+  assert.equal(manifest.sheets.length, 1);
+  assert.ok(manifest.images.every((image) => image.mode === "prediction"));
+  await assert.rejects(buildReview({ snapshot: snapshot.manifest, plan: snapshot.uploadPlan,
+    output: join(root, "missing"), candidates: "predictions" }), /requires a prediction/);
+});
+test("stages selected predictions as unreviewed full rasters", async () => {
+  const { root, demo, snapshot } = await fixture(),
+    manifest = await readJSON(snapshot.manifest),
+    predictions = await readJSON(demo.predictions),
+    firstSet = manifest.sets[0],
+    firstImage = firstSet.images[0],
+    selection = join(root, "selection.json"),
+    report = join(root, "staging-report.json");
+  predictions.datasetId = manifest.datasetId;
+  await writeFile(demo.predictions, JSON.stringify(predictions));
+  await writeFile(
+    selection,
+    JSON.stringify({
+      schema: "horizon-scribe-next-batch-source/v1",
+      datasetId: manifest.datasetId,
+      images: [{ setId: firstSet.id, image: firstImage.name, rank: 0 }],
+    }),
+  );
+  let writes = 0,
+    state = {
+      schema: "horizon-scribe-cloud-review-state/v1",
+      datasetId: manifest.datasetId,
+      setId: firstSet.id,
+      image: firstImage.name,
+      width: firstImage.width,
+      height: firstImage.height,
+      correction: {
+        revision: null,
+        localBaseRevision: firstImage.review?.revision ?? null,
+        approved: false,
+        humanReviewed: false,
+        representation: "model-base-mask/v1",
+        rows: [],
+      },
+    };
+  const fetcher = async (url, options = {}) => {
+    if (new URL(url).pathname === "/v1/catalog")
+      return Response.json({
+        schema: "horizon-scribe-cloud-catalog/v1",
+        datasetId: manifest.datasetId,
+      });
+    if (options.method === "PUT") {
+      writes++;
+      const body = JSON.parse(options.body);
+      assert.equal(body.humanReviewed, false);
+      assert.equal(body.approved, false);
+      assert.equal(body.rows.length, firstImage.height);
+      assert.ok(
+        body.rows.every(
+          (row) =>
+            row.runs[0][0] === 0 &&
+            row.runs.at(-1)[1] === firstImage.width &&
+            row.runs.every((run) => run[2] >= 1 && run[2] <= 3),
+        ),
+      );
+      state = {
+        ...state,
+        correction: {
+          ...state.correction,
+          revision: "c".repeat(64),
+          representation: body.representation,
+          rows: body.rows,
+        },
+      };
+    }
+    return Response.json(state);
+  };
+  const result = await stageSelectedPredictions(
+    {
+      url: "https://worker.example/",
+      snapshot: snapshot.manifest,
+      plan: snapshot.uploadPlan,
+      selection,
+      predictions: demo.predictions,
+      report,
+    },
+    "t".repeat(32),
+    fetcher,
+  );
+  assert.equal(result.staged, 1);
+  assert.equal(writes, 1);
+  assert.equal((await readJSON(report)).images[0].revision, "c".repeat(64));
 });
 test("imports own photos without changing originals and supplies blank base masks", async () => {
   const { root, demo } = await fixture(),

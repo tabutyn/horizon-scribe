@@ -16,7 +16,7 @@ struct HorizonScribeWorkspaceView: View {
     @EnvironmentObject private var session: HorizonScribeSession
     @State private var queue: ReviewQueue = .next
     @State private var isEditing = false
-    @State private var completedOpacity = 0.62
+    @State private var previewOpacity = 0.62
     @State private var navigationResetToken = 0
     @State private var showsReloadConfirmation = false
     @State private var showsEditorHelp = false
@@ -128,11 +128,18 @@ struct HorizonScribeWorkspaceView: View {
             .font(.caption)
             .foregroundStyle(Color.horizonScribeMuted)
 
-            Button("Sign out") { Task { await session.signOut() } }
-                .foregroundStyle(Color.horizonScribeMuted)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .frame(minHeight: 44)
-                .disabled(session.isBusy || session.isSavingReview)
+            HStack {
+                Button {
+                    Task { await session.refreshAccess() }
+                } label: {
+                    Label("Refresh queue", systemImage: "arrow.clockwise")
+                }
+                Spacer()
+                Button("Sign out") { Task { await session.signOut() } }
+            }
+            .foregroundStyle(Color.horizonScribeMuted)
+            .frame(minHeight: 44)
+            .disabled(session.isBusy || session.isSavingReview)
         }
         .padding(16)
         .background(Color.horizonScribePanel)
@@ -188,14 +195,14 @@ struct HorizonScribeWorkspaceView: View {
         VStack(spacing: 0) {
             canvas(
                 editable: false,
-                mode: queue == .completed ? .result : .source,
-                opacity: queue == .completed ? completedOpacity : 0
+                mode: .result,
+                opacity: previewOpacity
             )
-            if queue == .completed && session.currentEditor != nil {
+            if session.currentEditor != nil {
                 HStack {
-                    Slider(value: $completedOpacity, in: 0...1)
+                    Slider(value: $previewOpacity, in: 0...1)
                         .tint(Color.horizonScribeLime)
-                    Text("\(Int(completedOpacity * 100))%")
+                    Text("\(Int(previewOpacity * 100))%")
                         .font(.caption.monospacedDigit())
                         .foregroundStyle(Color.horizonScribeMuted)
                 }

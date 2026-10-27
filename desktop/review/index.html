@@ -7,67 +7,37 @@
     <link rel="stylesheet" href="/style.css" />
   </head>
   <body>
-    <header>
-      <div>
-        <p class="eyebrow">HORIZONSCRIBE / DESKTOP REVIEW</p>
-        <h1>Choose the next round.</h1>
-        <p>
-          Inspect the masks. Send the images that need a human eye to your iPad.
-        </p>
+    <main>
+      <div id="sheet" aria-label="Pre-rendered review sheet"></div>
+      <nav aria-label="Pages">
+        <button id="previous">← Previous</button><span id="page"></span
+        ><button id="next">Next →</button
+        ><label class="overlay-toggle" title="Toggle inferred-label overlay"
+          ><input
+            type="checkbox"
+            id="overlay"
+            checked
+            aria-label="Show overlay"
+          /><span aria-hidden="true"
+            ><svg viewBox="0 0 24 24">
+              <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+              <circle cx="12" cy="12" r="2.8" /></svg></span></label
+        ><button id="selection-summary"><span id="count">0</span> selected</button>
+      </nav>
+    </main>
+    <dialog id="selection-dialog">
+      <div class="dialog-header">
+        <h2>Selected images</h2>
+        <form method="dialog"><button aria-label="Close selection">×</button></form>
       </div>
-      <span class="badge">Local workspace</span>
-    </header>
-    <section class="toolbar" aria-label="Review filters">
-      <label
-        >Set<select id="set">
-          <option value="">All sets</option>
-        </select></label
-      >
-      <label
-        >Find image<input id="search" type="search" placeholder="Image name"
-      /></label>
-      <label
-        >Order<select id="sort">
-          <option value="priority">Priority first</option>
-          <option value="name">Image name</option>
-        </select></label
-      >
-      <label class="check"
-        ><input type="checkbox" id="overlay" checked /> Show overlay</label
-      >
-      <label class="check"
-        ><input type="checkbox" id="pending" checked /> Hide approved</label
-      >
-      <label class="check"
-        ><input type="checkbox" id="selected-only" /> Selected only</label
-      >
-    </section>
-    <p id="dataset" class="meta"></p>
-    <p class="legend">
-      Predictions: green = land · red = sea · purple = sky. Base masks: orange =
-      removed (sea/sky not distinguished). Priority is a review aid, not an
-      accuracy score.
-    </p>
-    <div class="workspace">
-      <main>
-        <div id="grid" aria-label="Review candidates"></div>
-        <nav aria-label="Pages">
-          <button id="previous">← Previous</button><span id="page"></span
-          ><button id="next">Next →</button>
-        </nav>
-      </main>
-      <aside>
-        <h2>Next labeling round <span id="count">0</span></h2>
-        <p>Selection order becomes the iPad queue. Up to 500 images.</p>
-        <ol id="queue"></ol>
-        <button id="download">Download selection JSON</button>
-        <p id="status" role="status" aria-live="polite">Loading…</p>
-        <p class="meta">
-          Selections save locally. Publishing to Cloudflare is a separate,
-          explicit command.
-        </p>
-      </aside>
-    </div>
+      <ol id="queue"></ol>
+      <button id="download">Download selection JSON</button>
+      <p class="meta">
+        Selections save locally. Publishing to Cloudflare is a separate,
+        explicit command.
+      </p>
+    </dialog>
+    <p id="status" role="status" aria-live="polite"></p>
     <script type="module" src="/app.mjs"></script>
   </body>
 </html>

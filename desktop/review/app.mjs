@@ -7,19 +7,21 @@ let catalog,
   saving = false,
   dirty = false,
   failed = false;
-const pageSize = 12;
+
 async function json(url, options) {
   const response = await fetch(url, options);
   const value = await response.json();
   if (!response.ok) throw new Error(value.error || `HTTP ${response.status}`);
   return value;
 }
+
 function element(tag, text, className) {
   const node = document.createElement(tag);
   if (text !== undefined) node.textContent = text;
   if (className) node.className = className;
   return node;
 }
+
 function selection() {
   return {
     schema: "horizon-scribe-next-batch-source/v1",
@@ -34,6 +36,7 @@ function selection() {
     })),
   };
 }
+
 async function persist() {
   dirty = true;
   if (saving || failed) return;
@@ -41,7 +44,6 @@ async function persist() {
   try {
     while (dirty) {
       dirty = false;
-      $("status").textContent = "Saving local selection…";
       const result = await json("/api/selection", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -49,7 +51,7 @@ async function persist() {
       });
       revision = result.selectionRevision;
     }
-    $("status").textContent = "Saved locally as next-batch.json";
+    $("status").textContent = "";
   } catch (error) {
     failed = true;
     dirty = true;
@@ -59,80 +61,32 @@ async function persist() {
     saving = false;
   }
 }
+
 function change() {
   render();
   void persist();
 }
-function toggle(row) {
-  const index = selected.findIndex((item) => identity(item) === identity(row));
-  if (index >= 0) selected.splice(index, 1);
-  else {
-    if (selected.length >= 500) {
-      $("status").textContent = "Maximum 500 images per round.";
-      return;
-    }
-    selected.push(row);
-  }
+
+function choose(row) {
+  const previous = selected.findIndex(
+    (item) => item.sheetIndex === row.sheetIndex,
+  );
+  if (previous >= 0 && identity(selected[previous]) === identity(row))
+    selected.splice(previous, 1);
+  else if (previous >= 0) selected.splice(previous, 1, row);
+  else selected.push(row);
   change();
 }
-function render() {
-  const keys = new Set(selected.map(identity));
-  const rows = catalog.images.filter(
-    (row) =>
-      (!$("set").value || row.setId === $("set").value) &&
-      row.image.toLowerCase().includes($("search").value.toLowerCase()) &&
-      (!$("pending").checked || !row.approved) &&
-      (!$("selected-only").checked || keys.has(identity(row))),
-  );
-  rows.sort(
-    (a, b) =>
-      ($("sort").value === "priority" ? b.priority - a.priority : 0) ||
-      a.setId.localeCompare(b.setId) ||
-      a.image.localeCompare(b.image),
-  );
-  const pages = Math.max(1, Math.ceil(rows.length / pageSize));
-  page = Math.min(page, pages - 1);
-  $("grid").replaceChildren();
-  for (const row of rows.slice(page * pageSize, (page + 1) * pageSize)) {
-    const chosen = keys.has(identity(row)),
-      button = element("button", undefined, "card");
-    button.setAttribute("aria-pressed", String(chosen));
-    button.setAttribute(
-      "aria-label",
-      `${chosen ? "Remove" : "Select"} ${row.setId}/${row.image}`,
-    );
-    const img = element("img");
-    img.src = `/media/${row.index}.${$("overlay").checked ? "overlay" : "photo"}.jpg`;
-    img.alt = `${row.mode === "prediction" ? "Prediction overlay" : "Base mask preview"} for ${row.image}`;
-    img.loading = "lazy";
-    const caption = element("span", undefined, "caption");
-    caption.append(
-      element("strong", row.image),
-      element("small", `${row.setLabel} · ${row.width} × ${row.height}`),
-      element(
-        "small",
-        `${row.mode} · priority ${row.priority.toFixed(3)}${row.approved ? " · approved" : ""}`,
-      ),
-      element(
-        "span",
-        chosen ? "✓ Selected" : "＋ Add to round",
-        chosen ? "chosen" : "",
-      ),
-    );
-    button.append(img, caption);
-    button.onclick = () => toggle(row);
-    $("grid").append(button);
-  }
-  if (!rows.length)
-    $("grid").append(element("p", "No images match these filters."));
-  $("previous").disabled = page === 0;
-  $("next").disabled = page >= pages - 1;
-  $("page").textContent = `${page + 1} / ${pages} · ${rows.length} images`;
+
+function renderQueue() {
   $("count").textContent = selected.length;
   $("download").disabled = !selected.length;
   $("queue").replaceChildren();
   selected.forEach((row, index) => {
-    const li = element("li", `${index + 1}. ${row.setId} / ${row.image}`),
+    const li = element(
+        "li",
+        `Sheet ${row.sheetIndex + 1}, tile ${row.sheetSlot + 1} · ${row.setId} / ${row.image}`,
+      ),
       controls = element("div", undefined, "controls");
     for (const [text, delta] of [
       ["↑", -1],
@@ -161,18 +115,52 @@ function render() {
     $("queue").append(li);
   });
 }
-for (const id of [
-  "set",
-  "search",
-  "sort",
-  "overlay",
-  "pending",
-  "selected-only",
-])
-  $(id).addEventListener("input", () => {
-    page = 0;
-    if (catalog) render();
-  });
+
+function render() {
+  const pages = catalog.sheets.length;
+  page = Math.max(0, Math.min(page, Math.max(0, pages - 1)));
+  $("sheet").replaceChildren();
+  if (!pages) {
+    $("sheet").append(
+      element("p", "No unapproved images remain in this review bundle."),
+    );
+  } else {
+    const sheet = catalog.sheets[page],
+      frame = element("div", undefined, "sheet-frame"),
+      image = element("img", undefined, "sheet-image"),
+      hotspots = element("div", undefined, "sheet-hotspots");
+    image.src = `/media/sheet-${sheet.index}.${$("overlay").checked ? "overlay" : "photo"}.jpg`;
+    image.alt = `Pre-rendered 4 by 4 ${$("overlay").checked ? "inferred-label" : "source-photo"} review sheet ${sheet.index + 1}`;
+    for (const imageIndex of sheet.imageIndexes) {
+      const row = catalog.images[imageIndex],
+        chosen = selected.some((item) => identity(item) === identity(row)),
+        button = element("button", undefined, "tile-button"),
+        number = element("span", String(row.sheetSlot + 1), "tile-number");
+      button.type = "button";
+      button.setAttribute("aria-pressed", String(chosen));
+      button.setAttribute(
+        "aria-label",
+        `${chosen ? "Remove" : "Select"} sheet ${sheet.index + 1} tile ${row.sheetSlot + 1}: ${row.setId}/${row.image}`,
+      );
+      button.title = `${row.setLabel} · ${row.image} · priority ${row.priority.toFixed(3)}`;
+      button.append(number);
+      button.onclick = () => choose(row);
+      hotspots.append(button);
+    }
+    frame.append(image, hotspots);
+    $("sheet").append(frame);
+  }
+  $("previous").disabled = page === 0 || !pages;
+  $("next").disabled = !pages || page >= pages - 1;
+  $("page").textContent = pages
+    ? `Sheet ${page + 1} / ${pages}`
+    : "0 review sheets";
+  renderQueue();
+}
+
+$("overlay").addEventListener("input", () => {
+  if (catalog) render();
+});
 $("previous").onclick = () => {
   page--;
   render();
@@ -180,6 +168,9 @@ $("previous").onclick = () => {
 $("next").onclick = () => {
   page++;
   render();
+};
+$("selection-summary").onclick = () => {
+  $("selection-dialog").showModal();
 };
 $("download").onclick = () => {
   const url = URL.createObjectURL(
@@ -199,21 +190,15 @@ window.addEventListener("beforeunload", (event) => {
     event.returnValue = "";
   }
 });
+
 try {
   catalog = await json("/api/catalog");
-  selected = catalog.selection.images;
+  const rows = new Map(catalog.images.map((row) => [identity(row), row]));
+  selected = catalog.selection.images
+    .map((row) => rows.get(identity(row)))
+    .filter(Boolean);
   revision = catalog.selectionRevision;
-  const sets = new Map(catalog.images.map((row) => [row.setId, row.setLabel]));
-  for (const [id, label] of sets) {
-    const option = element("option", label);
-    option.value = id;
-    $("set").append(option);
-  }
-  $("dataset").textContent =
-    `Dataset ${catalog.datasetId} · ${catalog.images.length} images · status: ${catalog.reviewStatus} · built ${catalog.generatedAt}`;
-  $("status").textContent = selected.length
-    ? "Restored your saved selection."
-    : "Select images to begin.";
+  $("status").textContent = "";
   render();
 } catch (error) {
   $("status").textContent = error.message;

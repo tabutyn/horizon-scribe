@@ -3,13 +3,13 @@ import { join } from "node:path";
 import sharp from "sharp";
 import { isMain, options, writeJSON } from "../desktop/lib.mjs";
 
-export async function createDemo(output) {
+export async function createDemo(output, count = 6) {
   await mkdir(output, { recursive: false });
   const images = [],
     predictions = [];
   const width = 480,
     height = 320;
-  for (let index = 0; index < 6; index++) {
+  for (let index = 0; index < count; index++) {
     const rgb = Buffer.alloc(width * height * 3),
       labels = Buffer.alloc(width * height),
       base = Buffer.alloc(width * height);

@@ -34,6 +34,7 @@ Inspect your generated file:
 | --- | --- | --- |
 | `name` | `horizon-scribe` | Worker service in your account |
 | `workers_dev` | `true` | Cloudflare-provided HTTPS hostname; no purchased domain required |
+| `preview_urls` | `false` | Disables extra per-version preview hostnames; use the stable `workers.dev` URL |
 | `r2_buckets[0].binding` | `HORIZON_SCRIBE_BUCKET` | Code-facing binding; do not rename without changing code |
 | `r2_buckets[0].bucket_name` | `horizon-scribe` | Your actual private R2 bucket |
 | `vars.HORIZON_SCRIBE_PREFIX` | `production/horizon-scribe/v1` | Namespace shared by Worker, dataset builder, and S3 uploader |
@@ -71,7 +72,7 @@ HORIZON_SCRIBE_TOKEN="$(node scripts/create-api-token.mjs)"
 printf '%s' "$HORIZON_SCRIBE_TOKEN" | npx wrangler secret put HORIZON_SCRIBE_API_TOKEN --config cloudflare/wrangler.jsonc
 ```
 
-If Wrangler asks to create the not-yet-existing Worker, confirm **only after checking the name and account**. Store the token in your password manager before closing the shell. To transfer it, display or copy the variable only while recording is stopped; the commands above deliberately do not print it.
+If Wrangler asks to create the not-yet-existing Worker, confirm **only after checking the name and account**. Retain the token in your password manager before closing the shell. On the Mac that builds the iPad app, keep this shell open through step 8: the installer accepts this token through stdin, stores it in Mac Keychain, and transfers it to the iPad automatically without displaying it. If cloud setup ran on another computer, make the same token available through your Mac secret manager or Keychain; do not create a different token just for the installer.
 
 Use a Worker **secret**, not a `vars` entry. Cloudflare documents this distinction in [Secrets](https://developers.cloudflare.com/workers/configuration/secrets/).
 
@@ -130,9 +131,11 @@ node desktop/upload-r2.mjs upload --plan data/publish-round-01/next-pass-upload-
 
 Only an explicitly invoked upload publishes data. The app and Worker never need these S3 credentials.
 
-## 8. Connect the iPad
+## 8. Install and automatically connect the iPad
 
-Build using [the iPad instructions](../ios/README.md). Enter the **root HTTPS Worker URL**, without `/v1` or `/health`, and the app token from step 4. The app stores connection credentials in iPad Keychain.
+Follow [the Mac installer instructions](../ios/README.md#install-and-connect-from-a-mac). Supply your deployment URL and Apple signing/device settings once on the Mac. Pipe the token from step 4 into `npm run ios:install -- ... --token-stdin`. The installer builds, signs, installs, provisions, and verifies the connected app. No URL or token entry is required on the iPad.
+
+The token goes into Mac and iPad Keychains; non-secret installer settings are saved in ignored `.local/ios-device.json`. Future updates use `npm run ios:install`. An existing Mac Keychain entry can also be selected with `--keychain-service` and `--keychain-account`. The app still supports manual entry for installations outside this workflow.
 
 The local desktop review server is not the iPad API. Do not enter `http://127.0.0.1:4317` on the iPad. The reviewer does not need to run while the iPad labels images.
 
@@ -140,7 +143,7 @@ The local desktop review server is not the iPad API. Do not enter `http://127.0.
 
 A custom domain is optional. Configure it on the **Worker**, not the R2 bucket, following [Worker custom domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/). Keep the app URL rooted at `/`. Reconnecting to a different URL creates a distinct local cache/draft namespace.
 
-Rotate a token by generating a new value and repeating `wrangler secret put`, then reconnect every iPad. The old token stops authorizing requests. Do not clear an app with unsynced drafts merely to rotate its credentials.
+Rotate a token by generating a new value and repeating `wrangler secret put`, then pipe the new value into `npm run ios:install -- --token-stdin` for each iPad. This updates credentials without clearing drafts. The old token stops authorizing requests.
 
 To isolate users or environments, use separate Workers, buckets/prefixes, and tokens. There are no per-user roles. `ALLOWED_ORIGINS` is a browser policy, not a replacement for authentication.
 
